@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sunbeam School Ayodhya | Space Quiz</title>
+  <meta name="description" content="Animated space‑themed quiz in a sleek dark UI. Vanilla HTML/CSS/JS, responsive, keyboard friendly." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="icon" href="assets/sunbeam-logo-preview.png">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#070a12;          /* Deep space */
+      --bg2:#0c1222;         /* Nebula overlay */
+      --text:#e6f1ff;        /* Soft white */
+      --muted:#93a3b5;       /* Muted */
+      --accent:#7dd3fc;      /* Cyan */
+      --accent-2:#a78bfa;    /* Purple */
+      --success:#22c55e;     /* Green */
+      --danger:#ef4444;      /* Red */
+      --card:#0b1020cc;      /* translucent */
+      --glow: 0 0 24px rgba(125,211,252,.25), 0 0 48px rgba(167,139,250,.2);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background: radial-gradient(1200px 700px at 10% -20%,#141a35 0%, transparent 60%),
+                                 radial-gradient(900px 600px at 90% 120%, #1a1035 0%, transparent 60%), var(--bg);
+      color:var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Cantarell, "Helvetica Neue", Arial, sans-serif;
+      overflow-x:hidden;
+    }
+
+    /* --- Starfield Canvas --- */
+    #stars{position:fixed; inset:0; z-index:-2;}
+    #nebula{position:fixed; inset:0; z-index:-1; background: radial-gradient(600px 400px at 70% 20%, rgba(124,58,237,.18), transparent 60%),
+                                               radial-gradient(500px 300px at 20% 70%, rgba(14,165,233,.15), transparent 60%);}  
+
+    /* --- Layout --- */
+    .wrap{max-width:1000px; margin:0 auto; padding:24px;}
+    header{display:flex; align-items:center; justify-content:space-between; gap:16px; padding:24px 0;}
+    .brand{display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--text)}
+    .logo{width:40px; height:40px; display:grid; place-items:center; border-radius:12px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: var(--glow)}
+    .brand h1{font-family: Orbitron, Inter, sans-serif; letter-spacing:.06em; font-size: clamp(18px, 2.6vw, 28px); margin:0}
+    .tag{color:var(--muted); font-size:12px}
+
+    .card{background: linear-gradient(180deg, rgba(12,18,34,.85), rgba(6,10,20,.7)); border:1px solid rgba(125,211,252,.12); backdrop-filter: blur(8px);
+          box-shadow: 0 10px 30px rgba(0,0,0,.4), var(--glow); border-radius: var(--radius);}
+
+    /* --- Screens --- */
+    .screen{display:none;}
+    .screen.active{display:block; animation: fadeIn .6s ease both;}
+    @keyframes fadeIn{from{opacity:0; transform: translateY(6px)} to{opacity:1; transform:none}}
+
+    /* --- Hero --- */
+    .hero{padding:28px; position:relative; overflow:hidden}
+    .hero h2{font-family: Orbitron, Inter, sans-serif; font-size:clamp(28px, 4vw, 44px); margin:.2em 0 .4em; text-shadow:0 2px 40px rgba(125,211,252,.28)}
+    .hero p{color:var(--muted); margin:0 0 16px}
+    .cta{display:flex; gap:12px; flex-wrap:wrap}
+    .btn{appearance:none; border:none; cursor:pointer; padding:14px 18px; border-radius:14px; font-weight:700; letter-spacing:.02em;
+         background:linear-gradient(135deg,#0ea5e9,#8b5cf6); color:white; box-shadow: var(--glow); transition: transform .12s ease, box-shadow .2s ease, filter .2s ease}
+    .btn:hover{transform: translateY(-2px)}
+    .btn.secondary{background:transparent; color:var(--accent); border:1px solid rgba(125,211,252,.35)}
+
+    /* --- Quiz --- */
+    .hud{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 16px; border-bottom:1px solid rgba(125,211,252,.12)}
+    .hud .stat{display:flex; align-items:center; gap:8px; color:var(--muted); font-weight:600}
+    .hud .value{color:var(--text)}
+
+    .progress{height:10px; background:#0b1224; border-radius:999px; overflow:hidden; border:1px solid rgba(125,211,252,.18)}
+    .bar{height:100%; width:0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow: var(--glow)}
+
+    .q-area{padding:20px;}
+    .q-text{font-size:clamp(18px, 2.2vw, 24px); font-weight:800; margin:0 0 14px;}
+    .answers{display:grid; grid-template-columns:1fr; gap:12px}
+
+    .option{position:relative; color: #fff; padding:14px 16px; border-radius:12px; background:#0c1223; border:1px solid rgba(125,211,252,.18); cursor:pointer; transition: transform .08s ease, border-color .2s ease, background .2s ease}
+    .option:hover{transform: translateY(-1px); border-color: rgba(125,211,252,.4)}
+    .option kbd{font-family: Orbitron, monospace; background:#0b1329; padding:4px 8px; border-radius:6px; border:1px solid rgba(125,211,252,.25); margin-right:8px}
+
+    .option.correct{background: rgba(34,197,94,.15); border-color: rgba(34,197,94,.6)}
+    .option.wrong{background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.5)}
+
+    .controls{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:16px; border-top:1px solid rgba(125,211,252,.12)}
+    .ghost{background:transparent; border:1px solid rgba(125,211,252,.35); color:var(--text)}
+
+    /* --- Result --- */
+    .result{padding:24px; text-align:center}
+    .kudos{font-size: clamp(22px, 3vw, 34px); font-weight:900; font-family: Orbitron, Inter, sans-serif; margin:0 0 6px}
+    .scoreline{color:var(--muted); margin:0 0 20px}
+
+    /* --- Tiny animations --- */
+    .float{animation: float 5s ease-in-out infinite}
+    @keyframes float{0%,100%{transform: translateY(0)} 50%{transform: translateY(-10px)}}
+
+    .twinkle{position:absolute; inset:0; pointer-events:none}
+    .twinkle i{position:absolute; width:3px; height:3px; background:#fff9; border-radius:999px; filter: blur(.6px); animation: twinkle 2.4s ease-in-out infinite}
+    @keyframes twinkle{50%{opacity:.2; transform: scale(.6)} }
+
+    /* --- Responsive --- */
+    @media (min-width:720px){
+      .answers{grid-template-columns: 1fr 1fr}
+    }
+
+    /* --- Confetti --- */
+    .confetti{position:fixed; inset:0; pointer-events:none;}
+  </style>
+</head>
+<body>
+  <canvas id="stars" aria-hidden="true"></canvas>
+  <div id="nebula" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <header>
+      <a class="brand" href="#" aria-label="Space Quiz Home" onclick="switchScreen('home')">
+        <span class="logo"><img src="assets/sunbeam-logo-preview.png" alt="" style="position: relative; width: 40px; height: 40px;"></span>
+        <div>
+          <h1>SUNBEAM AYODHA SPACE QUIZ</h1>
+          <div class="tag">Sunbeam School Ayodhya</div>
+        </div>
+      </a>
+      <div style="display:flex; gap:8px; align-items:center">
+        <button class="btn secondary" id="muteBtn" aria-pressed="false" title="Toggle sounds">🔊 Sound</button>
+        <button class="btn secondary" id="themeBtn" aria-pressed="false" title="Glow boost">✨ Glow</button>
+      </div>
+    </header>
+
+    <!-- HOME SCREEN -->
+    <section id="home" class="screen active">
+      <div class="card hero">
+        <div class="twinkle" id="twinkle"></div>
+        <h2>🌌 Ready to test your cosmic IQ?</h2>
+        <p>Answer 10 hand‑picked questions about planets, missions, and the universe. Use <strong>A / B / C / D</strong> keys to choose quickly. You’ll get instant feedback, a timer, and a shiny score at the end. Good luck, cadet!</p>
+        <div class="cta">
+          <button class="btn" id="startBtn">Start Quiz</button>
+          <button class="btn secondary" id="howBtn">How to Play</button>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr; gap:18px; margin-top:18px">
+        <div class="card" style="padding:18px">
+          <h3 style="margin:0 0 8px">🏆 High Score</h3>
+          <div id="highScore" style="color:var(--muted)">No attempts yet. Be the first!</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUIZ SCREEN -->
+    <section id="quiz" class="screen">
+      <div class="card">
+        <div class="hud">
+          <div class="stat">⏱️ Time: <span class="value" id="timer">00:00</span></div>
+          <div class="stat">📍 Q: <span class="value" id="qIndex">1</span>/<span id="qTotal">10</span></div>
+          <div class="stat" style="flex:1">
+            <div class="progress" aria-label="Progress"><div id="bar" class="bar"></div></div>
+          </div>
+          <div class="stat">⭐ Score: <span class="value" id="score">0</span></div>
+        </div>
+        <div class="q-area">
+          <div class="q-text" id="qText">Question goes here…</div>
+          <div class="answers" id="answers"></div>
+        </div>
+        <div class="controls">
+          <button class="btn ghost" id="prevBtn" disabled>← Prev</button>
+          <button class="btn" id="nextBtn">Next →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULT SCREEN -->
+    <section id="result" class="screen">
+      <div class="card result">
+        <div class="float" style="font-size:40px">🏁</div>
+        <p class="kudos" id="kudos">Mission Complete!</p>
+        <p class="scoreline" id="scoreline">You scored 0/10.</p>
+        <div class="cta" style="justify-content:center">
+          <button class="btn" id="retryBtn">Play Again</button>
+          <button class="btn secondary" onclick="switchScreen('home')">Home</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <canvas class="confetti" id="confetti"></canvas>
+
+  <audio id="snd-correct" preload="auto"><source src="data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQAAACAAACByAAACGAAAAG1wMwAAAA8AAAADAAAAvwAAABQA..." type="audio/mp3"></audio>
+  <audio id="snd-wrong" preload="auto"><source src="data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQAAACAAACByAAACGAAAAG1wMwAAAA8AAAADAAAAvwAAABQA..." type="audio/mp3"></audio>
+  <!-- The tiny base64s are placeholders; browsers will silently ignore if unsupported. Replace with your own short sounds if you like. -->
+
+  <script>
+  /* ==========================
+     STARFIELD (Canvas parallax)
+  ========================== */
+  const starCanvas = document.getElementById('stars');
+  const sctx = starCanvas.getContext('2d');
+  let stars = [];
+  function resizeStars(){ starCanvas.width = innerWidth; starCanvas.height = innerHeight; }
+  addEventListener('resize', resizeStars); resizeStars();
+  function makeStars(){
+    const count = Math.min(400, Math.floor((innerWidth*innerHeight)/6000));
+    stars = Array.from({length:count},()=>({
+      x: Math.random()*starCanvas.width,
+      y: Math.random()*starCanvas.height,
+      z: Math.random()*2+0.4,
+      a: Math.random()*0.7+0.3
+    }));
+  }
+  makeStars();
+  function drawStars(){
+    sctx.clearRect(0,0,starCanvas.width, starCanvas.height);
+    for(const st of stars){
+      sctx.fillStyle = `rgba(255,255,255,${st.a})`;
+      sctx.fillRect(st.x, st.y, st.z, st.z);
+      st.x -= st.z*0.08; // parallax drift
+      if(st.x < 0){ st.x = starCanvas.width; st.y = Math.random()*starCanvas.height; }
+    }
+    requestAnimationFrame(drawStars);
+  }
+  requestAnimationFrame(drawStars);
+
+  // Sprinkle twinkles in hero
+  const twinkle = document.getElementById('twinkle');
+  for(let i=0;i<22;i++){
+    const dot = document.createElement('i');
+    dot.style.left = Math.random()*100+'%';
+    dot.style.top  = Math.random()*100+'%';
+    dot.style.animationDelay = (Math.random()*2)+'s';
+    twinkle.appendChild(dot);
+  }
+
+  /* ==========================
+     QUIZ DATA
+  ========================== */
+  const QUESTIONS = [
+    {
+      q: "Which planet has the longest day (rotation period) in the Solar System?",
+      options: ["Venus","Mercury","Mars","Neptune"],
+      answer: 0,
+      explain: "Venus rotates once every ~243 Earth days and retrograde!"
+    },
+    {
+      q: "What was the first artificial satellite launched into Earth orbit?",
+      options: ["Explorer 1","Sputnik 1","Vanguard 1","Luna 1"],
+      answer: 1,
+      explain: "Sputnik 1 by the USSR (1957) kicked off the Space Age."
+    },
+    {
+      q: "Which telescope revealed pillars of creation in stunning detail?",
+      options: ["Keck","Spitzer","Hubble","FAST"],
+      answer: 2,
+      explain: "Hubble captured the iconic 1995 image of the Eagle Nebula (M16)."
+    },
+    {
+      q: "Which planet has the most moons as of now?",
+      options: ["Jupiter","Saturn","Uranus","Neptune"],
+      answer: 1,
+      explain: "Saturn narrowly leads in confirmed moons in recent counts."
+    },
+    {
+      q: "ISRO's Chandrayaan‑3 achieved a historic soft landing near which lunar region?",
+      options: ["Mare Tranquillitatis","South Pole","Oceanus Procellarum","Tycho Crater"],
+      answer: 1,
+      explain: "Vikram landed near the Moon's south polar region in 2023."
+    },
+    {
+      q: "What force counteracts gravity to keep satellites in orbit?",
+      options: ["Magnetism","Centrifugal (inertial) force","Radiation pressure","Dark energy"],
+      answer: 1,
+      explain: "Orbital motion's inertia provides the centripetal balance."
+    },
+    {
+      q: "Which planet’s day is shorter than its year?",
+      options: ["Mercury","Venus","Jupiter","Neptune"],
+      answer: 0,
+      explain: "Mercury orbits the Sun in 88 days; rotates every ~59 days (not shorter). Trick? The correct one is Venus: a Venusian day (243d) is longer than its year (225d).",
+      override: 1
+    },
+    {
+      q: "The International Space Station orbits Earth roughly every…",
+      options: ["45 minutes","90 minutes","6 hours","12 hours"],
+      answer: 1,
+      explain: "About 90 minutes per orbit at ~400 km altitude."
+    },
+    {
+      q: "Which is the largest volcano in the Solar System?",
+      options: ["Olympus Mons","Mauna Kea","Maxwell Montes","Rheasilvia"],
+      answer: 0,
+      explain: "Olympus Mons on Mars rises ~22 km high."
+    },
+    {
+      q: "What protects Earth from charged solar particles?",
+      options: ["Ozone layer","Jet stream","Magnetosphere","Trade winds"],
+      answer: 2,
+      explain: "Earth's magnetic field deflects much of the solar wind."
+    }
+  ];
+
+  // Normalize any overrides in data (safety for tricky Q7 above)
+  for(const item of QUESTIONS){ if(Number.isInteger(item.override)) item.answer = item.override; }
+
+  /* ==========================
+     STATE
+  ========================== */
+  let idx = 0, score = 0, chosen = Array(QUESTIONS.length).fill(null), startTime = 0, timerId=null, glowOn=false, muted=false;
+  const els = {
+    home: document.getElementById('home'),
+    quiz: document.getElementById('quiz'),
+    result: document.getElementById('result'),
+    qText: document.getElementById('qText'),
+    answers: document.getElementById('answers'),
+    qIndex: document.getElementById('qIndex'),
+    qTotal: document.getElementById('qTotal'),
+    bar: document.getElementById('bar'),
+    score: document.getElementById('score'),
+    timer: document.getElementById('timer'),
+    prevBtn: document.getElementById('prevBtn'),
+    nextBtn: document.getElementById('nextBtn'),
+    kudos: document.getElementById('kudos'),
+    scoreline: document.getElementById('scoreline'),
+    confetti: document.getElementById('confetti'),
+    highScore: document.getElementById('highScore'),
+  };
+  els.qTotal.textContent = QUESTIONS.length;
+
+  /* ==========================
+     SCREEN SWITCHER
+  ========================== */
+  function switchScreen(name){
+    for(const s of [els.home, els.quiz, els.result]) s.classList.remove('active');
+    (name==='home'?els.home: name==='quiz'?els.quiz: els.result).classList.add('active');
+  }
+
+  /* ==========================
+     RENDER QUESTION
+  ========================== */
+  function render(){
+    const q = QUESTIONS[idx];
+    els.qText.textContent = q.q;
+    els.answers.innerHTML = '';
+    q.options.forEach((opt, i)=>{
+      const btn = document.createElement('button');
+      btn.className = 'option';
+      btn.innerHTML = `<kbd>${String.fromCharCode(65+i)}</kbd> ${opt}`;
+      btn.onclick = ()=> select(i);
+      const picked = chosen[idx];
+      if(picked !== null){
+        if(i === q.answer) btn.classList.add('correct');
+        if(i === picked && picked !== q.answer) btn.classList.add('wrong');
+        btn.disabled = true;
+      }
+      els.answers.appendChild(btn);
+    });
+    els.qIndex.textContent = idx+1;
+    els.prevBtn.disabled = idx===0;
+    els.nextBtn.textContent = (idx===QUESTIONS.length-1)? 'Finish ✅' : 'Next →';
+    els.bar.style.width = ((idx)/QUESTIONS.length*100).toFixed(1)+'%';
+  }
+
+  function select(i){
+    if(chosen[idx]!==null) return; // already answered
+    chosen[idx] = i;
+    const correct = QUESTIONS[idx].answer;
+    if(i===correct){ score++; beep('ok'); }
+    else beep('no');
+    els.score.textContent = score;
+    // reveal correctness
+    [...els.answers.children].forEach((el, j)=>{
+      if(j===correct) el.classList.add('correct');
+      if(j===i && i!==correct) el.classList.add('wrong');
+      el.disabled = true;
+    });
+    // auto-advance after short delay
+    setTimeout(()=>{
+      if(idx < QUESTIONS.length-1){ idx++; render(); }
+      else finish();
+    }, 650);
+  }
+
+  /* ==========================
+     TIMER
+  ========================== */
+  function startTimer(){
+    startTime = Date.now();
+    clearInterval(timerId);
+    timerId = setInterval(()=>{
+      const t = Date.now()-startTime;
+      const s = Math.floor(t/1000), m = Math.floor(s/60);
+      els.timer.textContent = String(m).padStart(2,'0')+":"+String(s%60).padStart(2,'0');
+    }, 200);
+  }
+
+  /* ==========================
+     FINISH & RESULT
+  ========================== */
+  function finish(){
+    clearInterval(timerId);
+    switchScreen('result');
+    const percent = Math.round((score/QUESTIONS.length)*100);
+    els.scoreline.textContent = `You scored ${score}/${QUESTIONS.length} — ${percent}% in ${els.timer.textContent}.`;
+    els.kudos.textContent = percent>=90? '🌟 Stellar!': percent>=70? '🚀 Great Flight!' : percent>=50? '🛰️ Not bad, cadet!' : '🌑 Keep training!';
+    fireConfetti(percent);
+    saveHighScore(percent, els.timer.textContent);
+    showHighScore();
+  }
+
+  /* ==========================
+     CONFETTI (Canvas)
+  ========================== */
+  const conf = els.confetti, cctx = conf.getContext('2d');
+  function resizeConfetti(){ conf.width = innerWidth; conf.height = innerHeight; }
+  addEventListener('resize', resizeConfetti); resizeConfetti();
+  let shards = [];
+  function fireConfetti(power=100){
+    shards = Array.from({length: Math.floor(80 + power/2)}, (_,i)=>({
+      x: innerWidth/2 + (Math.random()*120 - 60),
+      y: innerHeight/3,
+      vx: (Math.random()*6 - 3),
+      vy: -(Math.random()*8 + 6),
+      g: .25 + Math.random()*.15,
+      s: 3+Math.random()*3,
+      r: Math.random()*Math.PI
+    }));
+    (function anim(){
+      cctx.clearRect(0,0,conf.width,conf.height);
+      for(const p of shards){
+        p.vy += p.g; p.x += p.vx; p.y += p.vy; p.r += .1;
+        cctx.save(); cctx.translate(p.x,p.y); cctx.rotate(p.r);
+        cctx.fillStyle = Math.random()>.5? '#7dd3fc' : '#a78bfa';
+        cctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*2);
+        cctx.restore();
+      }
+      shards = shards.filter(p=>p.y<innerHeight+20);
+      if(shards.length) requestAnimationFrame(anim);
+    })();
+  }
+
+  /* ==========================
+     HIGH SCORE (localStorage)
+  ========================== */
+  const HS_KEY = 'spacequiz_highscore_v1';
+  function saveHighScore(percent, time){
+    const prev = JSON.parse(localStorage.getItem(HS_KEY) || 'null');
+    const current = {percent, time, date: new Date().toISOString()};
+    if(!prev || percent>prev.percent || (percent===prev.percent && time < prev.time)){
+      localStorage.setItem(HS_KEY, JSON.stringify(current));
+    }
+  }
+  function showHighScore(){
+    const hs = JSON.parse(localStorage.getItem(HS_KEY) || 'null');
+    els.highScore.textContent = hs ? `Best: ${hs.percent}% in ${hs.time}` : 'No attempts yet. Be the first!';
+  }
+  showHighScore();
+
+  /* ==========================
+     SOUND & UI TOGGLES
+  ========================== */
+  const ok = document.getElementById('snd-correct');
+  const no = document.getElementById('snd-wrong');
+  function beep(kind){ if(muted) return; (kind==='ok'?ok:no)?.play?.(); }
+  document.getElementById('muteBtn').addEventListener('click', e=>{
+    muted = !muted; e.currentTarget.textContent = muted? '🔇 Muted' : '🔊 Sound';
+    e.currentTarget.setAttribute('aria-pressed', String(!muted));
+  });
+  document.getElementById('themeBtn').addEventListener('click', e=>{
+    glowOn = !glowOn;
+    document.body.style.filter = glowOn? 'saturate(1.2) drop-shadow(0 0 8px rgba(124,58,237,.25))' : 'none';
+    e.currentTarget.setAttribute('aria-pressed', String(glowOn));
+  });
+
+  /* ==========================
+     NAV EVENTS
+  ========================== */
+  document.getElementById('startBtn').onclick = ()=>{ start(); };
+  document.getElementById('howBtn').onclick = ()=>{
+    alert('How to play:\n\n• Click an option or press A/B/C/D.\n• Instant feedback after choosing.\n• Auto-next after each question.\n• Score shown at the end.\n• Try to beat your high score!');
+  };
+  document.getElementById('prevBtn').onclick = ()=>{ if(idx>0){ idx--; render(); } };
+  document.getElementById('nextBtn').onclick = ()=>{ if(idx<QUESTIONS.length-1){ idx++; render(); } else finish(); };
+  document.getElementById('retryBtn').onclick = ()=>{ start(); };
+
+  addEventListener('keydown', e=>{
+    if(!els.quiz.classList.contains('active')) return;
+    const key = e.key.toLowerCase();
+    const map = {a:0,b:1,c:2,d:3};
+    if(key in map){ select(map[key]); }
+    if(key==='arrowright'){ if(idx<QUESTIONS.length-1){ idx++; render(); } }
+    if(key==='arrowleft'){ if(idx>0){ idx--; render(); } }
+  });
+
+  function start(){
+    idx = 0; score = 0; chosen = Array(QUESTIONS.length).fill(null);
+    els.score.textContent = 0; els.bar.style.width = '0%';
+    switchScreen('quiz');
+    render();
+    startTimer();
+  }
+  </script>
+</body>
+</html>
